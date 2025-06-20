@@ -13,8 +13,8 @@ It is handy for visually separating code blocks, adding headings to configuratio
 
 1. **Select text** — highlight the word or phrase you want to turn into a banner.
 2. **Run the command**
-   - **Command Palette:** press `Ctrl+Shift+P` (`Cmd+Shift+P` on macOS), start typing “Create Banner Comment” and choose the command.
-   - **Keyboard shortcut:** by default press `Ctrl+Alt+B` (Windows / Linux) or `Cmd+Alt+B` (macOS).
+    - **Command Palette:** press `Ctrl+Shift+P` (`Cmd+Shift+P` on macOS), start typing “Create Banner Comment” and choose the command.
+    - **Keyboard shortcut:** by default press `Ctrl+Alt+B` (Windows / Linux) or `Cmd+Alt+B` (macOS).
 
 After execution the selected text is replaced with a banner like:
 
