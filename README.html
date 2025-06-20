@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Banner Comment</title>
+            <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only],
+.vscode-high-contrast:not(.vscode-high-contrast-light) img[src$=\#gh-light-mode-only],
+.vscode-high-contrast-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+</style>
+            
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+<style>
+:root {
+  --color-note: #0969da;
+  --color-tip: #1a7f37;
+  --color-warning: #9a6700;
+  --color-severe: #bc4c00;
+  --color-caution: #d1242f;
+  --color-important: #8250df;
+}
+
+</style>
+<style>
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-note: #2f81f7;
+    --color-tip: #3fb950;
+    --color-warning: #d29922;
+    --color-severe: #db6d28;
+    --color-caution: #f85149;
+    --color-important: #a371f7;
+  }
+}
+
+</style>
+<style>
+.markdown-alert {
+  padding: 0.5rem 1rem;
+  margin-bottom: 16px;
+  color: inherit;
+  border-left: .25em solid #888;
+}
+
+.markdown-alert>:first-child {
+  margin-top: 0
+}
+
+.markdown-alert>:last-child {
+  margin-bottom: 0
+}
+
+.markdown-alert .markdown-alert-title {
+  display: flex;
+  font-weight: 500;
+  align-items: center;
+  line-height: 1
+}
+
+.markdown-alert .markdown-alert-title .octicon {
+  margin-right: 0.5rem;
+  display: inline-block;
+  overflow: visible !important;
+  vertical-align: text-bottom;
+  fill: currentColor;
+}
+
+.markdown-alert.markdown-alert-note {
+  border-left-color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-note .markdown-alert-title {
+  color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-important {
+  border-left-color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-important .markdown-alert-title {
+  color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-warning {
+  border-left-color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-warning .markdown-alert-title {
+  color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-tip {
+  border-left-color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-tip .markdown-alert-title {
+  color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-caution {
+  border-left-color: var(--color-caution);
+}
+
+.markdown-alert.markdown-alert-caution .markdown-alert-title {
+  color: var(--color-caution);
+}
+
+</style>
+        
+        </head>
+        <body class="vscode-body vscode-light">
+            <h1 id="banner-comment">Banner Comment</h1>
+<p>A Visual Studio Code extension that lets you quickly create neat banner comments from the selected text.<br>
+It is handy for visually separating code blocks, adding headings to configuration files, or simply leaving eye-catching comments.</p>
+<h2 id="features">Features</h2>
+<ul>
+<li>Converts the selected text into a styled banner.</li>
+<li>User-defined keyboard shortcut via standard VS Code settings.</li>
+<li>Extremely easy to use.</li>
+</ul>
+<h2 id="how-to-use">How to Use</h2>
+<ol>
+<li><strong>Select text</strong> — highlight the word or phrase you want to turn into a banner.</li>
+<li><strong>Run the command</strong>
+<ul>
+<li><strong>Command Palette:</strong> press <code>Ctrl+Shift+P</code> (<code>Cmd+Shift+P</code> on macOS), start typing “Create Banner Comment” and choose the command.</li>
+<li><strong>Keyboard shortcut:</strong> by default press <code>Ctrl+Alt+B</code> (Windows / Linux) or <code>Cmd+Alt+B</code> (macOS).</li>
+</ul>
+</li>
+</ol>
+<p>After execution the selected text is replaced with a banner like:</p>
+<pre><code># ---- YOUR SELECTED TEXT ----
+</code></pre>
+<p>(The exact appearance depends on the configured width and padding character)</p>
+<h2 id="configuration">Configuration</h2>
+<p>This extension provides the following settings that can be configured in your VS Code User or Workspace settings:</p>
+<ul>
+<li><code>bannerComment.lineWidth</code>: The total width of the banner comment line.
+<ul>
+<li>Type: <code>integer</code></li>
+<li>Default: <code>80</code></li>
+</ul>
+</li>
+<li><code>bannerComment.paddingCharacter</code>: The character used to pad the banner comment. Any character can be used, including Cyrillic letters.
+<ul>
+<li>Type: <code>string</code></li>
+<li>Default: <code>&quot;-&quot;</code></li>
+</ul>
+</li>
+</ul>
+<p>Example <code>settings.json</code>:</p>
+<pre><code class="language-json"><span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;bannerComment.lineWidth&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">100</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;bannerComment.paddingCharacter&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;*&quot;</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<h2 id="customizing-keybindings">Customizing Keybindings</h2>
+<p>You can customize the keybinding for the &quot;Create banner comment&quot; command to your preference.<br>
+By default, it is bound to <code>Ctrl+Alt+B</code> (or <code>Cmd+Alt+B</code> on macOS).</p>
+<p>To change this:</p>
+<ol>
+<li>Open the Keyboard Shortcuts editor:
+<ul>
+<li>Menu: <code>File &gt; Preferences &gt; Keyboard Shortcuts</code> (<code>Code &gt; Preferences &gt; Keyboard Shortcuts</code> on macOS).</li>
+<li>Command Palette: <code>Preferences: Open Keyboard Shortcuts</code>.</li>
+<li>Shortcut: <code>Ctrl+K Ctrl+S</code>.</li>
+</ul>
+</li>
+<li>In the search bar of the Keyboard Shortcuts editor, type <code>bannerComment.make</code> (which is the command ID) or &quot;Create banner comment&quot;.</li>
+<li>You will see the &quot;Create banner comment&quot; command. You can then click the pencil icon next to it to change its keybinding, or right-click and select &quot;Change Keybinding...&quot;.</li>
+<li>Enter your desired key combination and press Enter.</li>
+</ol>
+<p>Alternatively, you can directly edit your <code>keybindings.json</code> file. You can open this file by running &quot;Preferences: Open Keyboard Shortcuts (JSON)&quot; from the Command Palette. Add an entry like this, replacing <code>&quot;your.desired.keys&quot;</code> with your chosen key combination:</p>
+<pre><code class="language-json"><span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;key&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;your.desired.keys&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;command&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;bannerComment.make&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;when&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;editorTextFocus&quot;</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<h2 id="feedback-and-suggestions">Feedback and Suggestions</h2>
+<p>Found a bug or have an idea? Feel free to open an issue or reach out.</p>
+
+            
+            
+        </body>
+        </html>
