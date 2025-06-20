@@ -1,0 +1,28 @@
+# Exclude directories containing temporary files and development dependencies
+.vscode/
+.vscode-test/
+node_modules/
+
+# Exclude TypeScript source code because the extension uses the compiled JS from /out
+src/
+
+# Exclude configuration and development files that are not needed in the packaged extension
+.gitattributes
+.editorconfig
+.eslintrc.json # or other possible eslintrc filenames
+.eslintignore
+tsconfig.json
+# webpack.config.js # If webpack were used
+
+# Log files and OS-specific files
+*.log
+npm-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
+
+# Packaged extension files (should not be included in another package)
+*.vsix
+
+# Files that might remain after tests or builds in the project root
+# coverage/ # if istanbul/nyc is used

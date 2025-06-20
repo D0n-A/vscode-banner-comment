@@ -1,0 +1,73 @@
+{
+    "name": "banner-comment",
+    "displayName": "Banner Comment",
+    "description": "Creates a beautiful banner comment from the selected text.",
+    "version": "0.0.2",
+    "publisher": "D0n-A",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/D0n-A/vscode-banner-comment"
+    },
+    "engines": {
+        "vscode": "^1.80.0"
+    },
+    "categories": [
+        "Formatters",
+        "Other"
+    ],
+    "activationEvents": [
+        "onCommand:bannerComment.make"
+    ],
+    "main": "./out/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "bannerComment.make",
+                "title": "Create banner comment"
+            }
+        ],
+        "keybindings": [
+            {
+                "command": "bannerComment.make",
+                "key": "ctrl+alt+b",
+                "mac": "cmd+alt+b",
+                "when": "editorTextFocus"
+            }
+        ],
+        "configuration": {
+            "title": "Banner Comment",
+            "properties": {
+                "bannerComment.lineWidth": {
+                    "type": "integer",
+                    "default": 80,
+                    "description": "The total width of the banner comment line."
+                },
+                "bannerComment.paddingCharacter": {
+                    "type": "string",
+                    "default": "-",
+                    "description": "The character used to pad the banner comment. Any character can be used, including Cyrillic letters."
+                }
+            }
+        }
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "lint": "eslint src --ext ts"
+    },
+    "devDependencies": {
+        "@types/glob": "^8.1.0",
+        "@types/mocha": "^10.0.6",
+        "@types/node": "20.x",
+        "@types/vscode": "^1.80.0",
+        "@typescript-eslint/eslint-plugin": "^8.34.1",
+        "@typescript-eslint/parser": "^8.34.1",
+        "@vscode/test-electron": "^2.3.9",
+        "eslint": "^9.0.0",
+        "glob": "^10.3.10",
+        "mocha": "^11.7.0",
+        "typescript": "^5.3.3",
+        "typescript-eslint": "^8.34.1"
+    }
+}
