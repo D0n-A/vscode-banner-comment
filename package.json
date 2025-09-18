@@ -60,7 +60,9 @@
         "compile": "tsc -p ./",
         "watch": "tsc -watch -p ./",
         "lint": "eslint src --ext ts",
-        "test": "npm run compile && node ./out/test/runTest.js"
+        "test": "npm run compile && node ./out/test/runTest.js",
+        "package": "npm run compile && vsce package",
+        "build:vsix": "npm run package"
     },
     "devDependencies": {
         "@types/glob": "^8.1.0",
@@ -70,6 +72,7 @@
         "@typescript-eslint/eslint-plugin": "^8.34.1",
         "@typescript-eslint/parser": "^8.34.1",
         "@vscode/test-electron": "^2.3.9",
+        "@vscode/vsce": "^3.0.0",
         "eslint": "^9.0.0",
         "glob": "^10.3.10",
         "mocha": "^11.7.0",
