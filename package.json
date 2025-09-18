@@ -2,7 +2,7 @@
     "name": "banner-comment",
     "displayName": "Banner Comment",
     "description": "Creates a beautiful banner comment from the selected text.",
-    "version": "0.0.2",
+    "version": "0.1.0",
     "publisher": "D0n-A",
     "repository": {
         "type": "git",
@@ -23,7 +23,8 @@
         "commands": [
             {
                 "command": "bannerComment.make",
-                "title": "Create banner comment"
+                "title": "Create Banner Comment",
+                "category": "Banner Comment"
             }
         ],
         "keybindings": [
@@ -31,7 +32,7 @@
                 "command": "bannerComment.make",
                 "key": "ctrl+alt+b",
                 "mac": "cmd+alt+b",
-                "when": "editorTextFocus"
+                "when": "editorTextFocus && editorHasSelection"
             }
         ],
         "configuration": {
@@ -40,12 +41,16 @@
                 "bannerComment.lineWidth": {
                     "type": "integer",
                     "default": 80,
-                    "description": "The total width of the banner comment line."
+                    "minimum": 10,
+                    "maximum": 200,
+                    "description": "The total width of the banner comment line. Must be between 10 and 200 characters."
                 },
                 "bannerComment.paddingCharacter": {
                     "type": "string",
                     "default": "-",
-                    "description": "The character used to pad the banner comment. Any character can be used, including Cyrillic letters."
+                    "minLength": 1,
+                    "maxLength": 1,
+                    "description": "The single character used to pad the banner comment. Examples: -, =, *, #, ~"
                 }
             }
         }
@@ -54,7 +59,8 @@
         "vscode:prepublish": "npm run compile",
         "compile": "tsc -p ./",
         "watch": "tsc -watch -p ./",
-        "lint": "eslint src --ext ts"
+        "lint": "eslint src --ext ts",
+        "test": "npm run compile && node ./out/test/runTest.js"
     },
     "devDependencies": {
         "@types/glob": "^8.1.0",
@@ -69,5 +75,12 @@
         "mocha": "^11.7.0",
         "typescript": "^5.3.3",
         "typescript-eslint": "^8.34.1"
-    }
+    },
+    "keywords": [
+        "banner",
+        "comment",
+        "formatting",
+        "code-decoration",
+        "separator"
+    ]
 }
