@@ -1,48 +1,104 @@
 import * as vscode from 'vscode'
 
 /**
+ * Returns the comment prefix for the given language ID
+ * @param languageId The VS Code language identifier
+ * @returns The comment prefix (e.g., "//", "#", "--")
+ */
+function getCommentPrefix(languageId: string): string {
+    switch (languageId) {
+        case 'javascript':
+        case 'typescript':
+        case 'javascriptreact':
+        case 'typescriptreact':
+        case 'java':
+        case 'c':
+        case 'cpp':
+        case 'csharp':
+        case 'objective-c':
+        case 'go':
+        case 'rust':
+        case 'jsonc':
+        case 'swift':
+        case 'kotlin':
+        case 'php':
+        case 'dart':
+            return '//'
+        case 'python':
+        case 'shellscript':
+        case 'yaml':
+        case 'dockerfile':
+        case 'makefile':
+        case 'perl':
+        case 'ruby':
+        case 'powershell':
+        case 'r':
+        case 'elixir':
+            return '#'
+        case 'sql':
+        case 'lua':
+        case 'haskell':
+        case 'ada':
+            return '--'
+        case 'clojure':
+        case 'lisp':
+        case 'scheme':
+            return ';;'
+        case 'tex':
+        case 'latex':
+        case 'matlab':
+            return '%'
+        case 'bat':
+            return 'REM'
+        default:
+            return '#'
+    }
+}
+
+/**
  * Extracts the original text from a banner comment
  * @param text The text that might be a banner
+ * @param prefix The comment prefix to check for
  * @returns The original text without banner formatting
  */
-function extractTextFromBanner(text: string): string {
+function extractTextFromBanner(text: string, prefix: string): string {
     const trimmed = text.trim()
-    
-    // Check if it starts with # (banner format)
-    if (!trimmed.startsWith('#')) {
+
+    // Check if it starts with the prefix
+    if (!trimmed.startsWith(prefix)) {
         return trimmed
     }
-    
-    // Remove the # prefix and any whitespace
-    const withoutPrefix = trimmed.substring(1).trim()
-    
-    // If it's empty after removing #, return empty
+
+    // Remove the prefix and any whitespace
+    const withoutPrefix = trimmed.substring(prefix.length).trim()
+
+    // If it's empty after removing prefix, return empty
     if (withoutPrefix.length === 0) {
         return ''
     }
-    
+
     // Check if it's a banner pattern: starts and ends with the same non-alphanumeric character
     // and has text in the middle surrounded by spaces
     if (withoutPrefix.length >= 2) {
         const firstChar = withoutPrefix.charAt(0)
         const lastChar = withoutPrefix.charAt(withoutPrefix.length - 1)
-        
+
         // If first and last characters are the same and are padding characters
         if (firstChar === lastChar && /[^a-zA-Z0-9А-Яа-я\s]/.test(firstChar)) {
             // Try to find the pattern: padding + space + text + space + padding
             let start = 0
             let end = withoutPrefix.length - 1
-            
+
             // Find where the padding ends on the left
             while (start < withoutPrefix.length && withoutPrefix.charAt(start) === firstChar) {
                 start++
             }
-            
-            // Find where the padding starts on the right  
+
+            // Find where the padding starts on the right
             while (end >= 0 && withoutPrefix.charAt(end) === lastChar) {
                 end--
             }
-            
+
             // Extract the middle part
             if (start <= end) {
                 const middlePart = withoutPrefix.substring(start, end + 1).trim()
@@ -52,8 +108,8 @@ function extractTextFromBanner(text: string): string {
             }
         }
     }
-    
-    // If not a banner pattern, return the text without # prefix
+
+    // If not a banner pattern, return the text without prefix
     return withoutPrefix
 }
 
@@ -81,7 +137,7 @@ function validateConfiguration(lineWidth: number, paddingCharacter: string): {
             `Line width too large: ${lineWidth}. Using maximum value: 200`
         )
     }
-    
+
     // Validate padding character
     let normalizedPadding = paddingCharacter
     if (!normalizedPadding || normalizedPadding.length === 0) {
@@ -96,7 +152,7 @@ function validateConfiguration(lineWidth: number, paddingCharacter: string): {
             `Padding character too long: "${paddingCharacter}". Using first character: "${normalizedPadding}"`
         )
     }
-    
+
     return {
         lineWidth: normalizedWidth,
         paddingCharacter: normalizedPadding
@@ -105,40 +161,43 @@ function validateConfiguration(lineWidth: number, paddingCharacter: string): {
 
 /**
  * Builds a string of the form
- * # --------------- TITLE ---------------
+ * <PREFIX> --------------- TITLE ---------------
  * @param text The text to put in the banner
  * @param width The total width of the banner line
  * @param fill The character to use for padding
+ * @param prefix The comment prefix to use
  * @returns The formatted banner string
  */
-function buildBanner(text: string, width: number, fill: string): string {
-    const cleanText = text.trim()
-    
+function buildBanner(text: string, width: number, fill: string, prefix: string): string {
+    const cleanText = text.replace(/[\r\n]+/g, ' ').trim()
+
     // Handle empty text - create a simple line
     if (cleanText.length === 0) {
-        const bodyWidth = width - 2 // Account for "# "
+        const prefixStr = `${prefix} `
+        const bodyWidth = width - prefixStr.length
         const body = fill.repeat(Math.max(0, bodyWidth))
-        return `# ${body}`
+        return `${prefixStr}${body}`
     }
-    
+
     const core = ` ${cleanText} ` // Add spaces around the text
-    const targetBodyWidth = width - 2 // Account for "# "
-    
+    const prefixStr = `${prefix} `
+    const targetBodyWidth = width - prefixStr.length
+
     // Check if text is too long for the specified width
     if (core.length >= targetBodyWidth) {
         // If text is too long, truncate it properly
         const availableSpace = Math.max(1, targetBodyWidth)
         const truncatedCore = core.substring(0, availableSpace)
-        return `# ${truncatedCore}`
+        return `${prefixStr}${truncatedCore}`
     }
-    
+
     // Calculate padding for perfect centering
     const totalPadding = targetBodyWidth - core.length
     const leftPadding = Math.floor(totalPadding / 2)
     const rightPadding = totalPadding - leftPadding
-    
+
     const body = fill.repeat(leftPadding) + core + fill.repeat(rightPadding)
-    return `# ${body}`
+    return `${prefixStr}${body}`
 }
 
 /**
@@ -177,7 +236,7 @@ function makeBanner() {
         const text = editor.document.getText(sel)
         return text.trim().length > 0
     })
-    
+
     if (!hasValidSelection) {
         vscode.window.showWarningMessage('Please select some text to create a banner.')
         return
@@ -186,26 +245,32 @@ function makeBanner() {
     const configuration = vscode.workspace.getConfiguration('bannerComment')
     const rawLineWidth = configuration.get<number>('lineWidth', 80)
     const rawPaddingCharacter = configuration.get<string>('paddingCharacter', '-')
-    
+
     // Validate and normalize configuration
     const { lineWidth, paddingCharacter } = validateConfiguration(rawLineWidth, rawPaddingCharacter)
+
+    // Determine comment prefix based on language
+    const languageId = editor.document.languageId
+    const commentPrefix = getCommentPrefix(languageId)
 
     // Process all selections in a single edit operation for better undo support
     editor.edit((editBuilder: vscode.TextEditorEdit) => {
         editor.selections.forEach((sel: vscode.Selection) => {
             const rawText = editor.document.getText(sel)
-            const trimmedText = rawText.trim()
-            
+            // Normalize text: replace newlines with spaces to ensure single-line banner
+            const normalizedText = rawText.replace(/[\r\n]+/g, ' ')
+            const trimmedText = normalizedText.trim()
+
             if (trimmedText.length === 0) {
                 // Skip empty selections
                 return
             }
-            
+
             // Extract original text if it's already a banner
-            const originalText = extractTextFromBanner(rawText)
-            
+            const originalText = extractTextFromBanner(normalizedText, commentPrefix)
+
             // Create new banner with original text
-            const banner = buildBanner(originalText, lineWidth, paddingCharacter)
+            const banner = buildBanner(originalText, lineWidth, paddingCharacter, commentPrefix)
             editBuilder.replace(sel, banner)
         })
     }).then((success) => {

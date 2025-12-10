@@ -2,7 +2,7 @@
     "name": "banner-comment",
     "displayName": "Banner Comment",
     "description": "Creates a beautiful banner comment from the selected text.",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "publisher": "D0n-A",
     "repository": {
         "type": "git",

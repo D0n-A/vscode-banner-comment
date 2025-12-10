@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1] - 2025-06-21
+
+### Added
+
+- Automatic detection of comment style based on file language (supports `//`, `#`, `--`, `;;`, `%`, `REM`).
+- Support for flattening multiline selections into a single-line banner.
+- Improved handling of empty or whitespace-only selections.
+
 ## [0.0.2] - 2025-06-21
 
 ### Added

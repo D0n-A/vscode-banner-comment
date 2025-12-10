@@ -6,8 +6,16 @@ It is handy for visually separating code blocks, adding headings to configuratio
 ## Features
 
 - Converts the selected text into a styled banner.
+- **Auto-detects language comment style:**
+  - `//` for JavaScript, TypeScript, Java, C#, Go, Rust, etc.
+  - `#` for Python, Ruby, Shell, YAML, Dockerfile, etc.
+  - `--` for SQL, Lua, Haskell, etc.
+  - `;;` for Clojure, Lisp.
+  - `%` for LaTeX.
+  - `REM` for Batch files.
+- **Handles multiline selections** (flattens them into a single line).
 - User-defined keyboard shortcut via standard VS Code settings.
-- Extremely easy to use.
+- Customizable width and padding characters.
 
 ## How to Use
 
@@ -16,10 +24,16 @@ It is handy for visually separating code blocks, adding headings to configuratio
     - **Command Palette:** press `Ctrl+Shift+P` (`Cmd+Shift+P` on macOS), start typing “Create Banner Comment” and choose the command.
     - **Keyboard shortcut:** by default press `Ctrl+Alt+B` (Windows / Linux) or `Cmd+Alt+B` (macOS).
 
-After execution the selected text is replaced with a banner like:
+After execution the selected text is replaced with a banner appropriate for the current file language.
 
+**JavaScript/TypeScript Example:**
+```javascript
+// ----------------- YOUR SELECTED TEXT -----------------
 ```
-# ---- YOUR SELECTED TEXT ----
+
+**Python Example:**
+```python
+# ----------------- YOUR SELECTED TEXT -----------------
 ```
 
 (The exact appearance depends on the configured width and padding character)
