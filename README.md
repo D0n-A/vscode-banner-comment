@@ -6,6 +6,9 @@ It is handy for visually separating code blocks, adding headings to configuratio
 ## Features
 
 - Converts the selected text into a styled banner.
+- **Two banner styles:**
+  - **Simple** — single-line banner: `// --- TEXT ---`
+  - **Box** — framed multi-line banner with 4 border styles
 - **Auto-detects language comment style:**
   - `//` for JavaScript, TypeScript, Java, C#, Go, Rust, etc.
   - `#` for Python, Ruby, Shell, YAML, Dockerfile, etc.
@@ -36,7 +39,37 @@ After execution the selected text is replaced with a banner appropriate for the 
 # ----------------- YOUR SELECTED TEXT -----------------
 ```
 
-(The exact appearance depends on the configured width and padding character)
+**Box Style Examples:**
+
+Unicode (default):
+```javascript
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║                           YOUR SELECTED TEXT                             ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+```
+
+Rounded:
+```python
+# ╭──────────────────────────────────────────────────────────────────────────╮
+# │                           YOUR SELECTED TEXT                             │
+# ╰──────────────────────────────────────────────────────────────────────────╯
+```
+
+Heavy:
+```typescript
+// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+// ┃                           YOUR SELECTED TEXT                             ┃
+// ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+
+ASCII:
+```python
+# +--------------------------------------------------------------------------+
+# |                           YOUR SELECTED TEXT                             |
+# +--------------------------------------------------------------------------+
+```
+
+(The exact appearance depends on the configured width and style)
 
 ## Configuration
 
@@ -45,16 +78,34 @@ This extension provides the following settings that can be configured in your VS
 - `bannerComment.lineWidth`: The total width of the banner comment line.
   - Type: `integer`
   - Default: `80`
-- `bannerComment.paddingCharacter`: The character used to pad the banner comment. Any character can be used, including Cyrillic letters.
+- `bannerComment.paddingCharacter`: The character used to pad the banner comment (for simple style).
   - Type: `string`
   - Default: `"-"`
+- `bannerComment.style`: The style of banner to create.
+  - Type: `string`
+  - Values: `"simple"`, `"box"`
+  - Default: `"simple"`
+- `bannerComment.boxStyle`: The style of box border (when using box style).
+  - Type: `string`
+  - Values: `"unicode"`, `"ascii"`, `"rounded"`, `"heavy"`
+  - Default: `"unicode"`
 
-Example `settings.json`:
+Example `settings.json` for simple style:
 
 ```json
 {
     "bannerComment.lineWidth": 100,
     "bannerComment.paddingCharacter": "*"
+}
+```
+
+Example `settings.json` for box style:
+
+```json
+{
+    "bannerComment.style": "box",
+    "bannerComment.boxStyle": "rounded",
+    "bannerComment.lineWidth": 80
 }
 ```
 

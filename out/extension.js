@@ -37,6 +37,43 @@ exports.activate = activate;
 exports.deactivate = deactivate;
 const vscode = __importStar(require("vscode"));
 /**
+ * Available box styles with their corresponding characters
+ */
+const BOX_STYLES = {
+    unicode: {
+        topLeft: '╔',
+        topRight: '╗',
+        bottomLeft: '╚',
+        bottomRight: '╝',
+        horizontal: '═',
+        vertical: '║'
+    },
+    ascii: {
+        topLeft: '+',
+        topRight: '+',
+        bottomLeft: '+',
+        bottomRight: '+',
+        horizontal: '-',
+        vertical: '|'
+    },
+    rounded: {
+        topLeft: '╭',
+        topRight: '╮',
+        bottomLeft: '╰',
+        bottomRight: '╯',
+        horizontal: '─',
+        vertical: '│'
+    },
+    heavy: {
+        topLeft: '┏',
+        topRight: '┓',
+        bottomLeft: '┗',
+        bottomRight: '┛',
+        horizontal: '━',
+        vertical: '┃'
+    }
+};
+/**
  * Returns the comment prefix for the given language ID
  * @param languageId The VS Code language identifier
  * @returns The comment prefix (e.g., "//", "#", "--")
@@ -122,7 +159,7 @@ function extractTextFromBanner(text, prefix) {
             while (start < withoutPrefix.length && withoutPrefix.charAt(start) === firstChar) {
                 start++;
             }
-            // Find where the padding starts on the right  
+            // Find where the padding starts on the right
             while (end >= 0 && withoutPrefix.charAt(end) === lastChar) {
                 end--;
             }
@@ -206,6 +243,79 @@ function buildBanner(text, width, fill, prefix) {
     return `${prefixStr}${body}`;
 }
 /**
+ * Builds a box-style banner comment with a frame around the text
+ * @param text The text to put in the banner
+ * @param width The total width of the banner line
+ * @param boxStyle The style of box to use (unicode, ascii, rounded, heavy)
+ * @param prefix The comment prefix to use
+ * @returns The formatted box banner string (multiple lines)
+ */
+function buildBoxBanner(text, width, boxStyle, prefix) {
+    const chars = BOX_STYLES[boxStyle] || BOX_STYLES.unicode;
+    const cleanText = text.replace(/[\r\n]+/g, ' ').trim();
+    const prefixStr = `${prefix} `;
+    const innerWidth = width - prefixStr.length - 2; // -2 for left and right border chars
+    // Ensure minimum width for the text
+    const effectiveInnerWidth = Math.max(innerWidth, 1);
+    // Build top line: // ╔════════════════════════════════════╗
+    const topLine = `${prefixStr}${chars.topLeft}${chars.horizontal.repeat(effectiveInnerWidth)}${chars.topRight}`;
+    // Build middle line with centered text: // ║         TEXT         ║
+    let middleContent;
+    if (cleanText.length === 0) {
+        middleContent = ' '.repeat(effectiveInnerWidth);
+    }
+    else if (cleanText.length >= effectiveInnerWidth) {
+        // Text too long, truncate it
+        middleContent = cleanText.substring(0, effectiveInnerWidth);
+    }
+    else {
+        // Center the text
+        const totalPadding = effectiveInnerWidth - cleanText.length;
+        const leftPad = Math.floor(totalPadding / 2);
+        const rightPad = totalPadding - leftPad;
+        middleContent = ' '.repeat(leftPad) + cleanText + ' '.repeat(rightPad);
+    }
+    const middleLine = `${prefixStr}${chars.vertical}${middleContent}${chars.vertical}`;
+    // Build bottom line: // ╚════════════════════════════════════╝
+    const bottomLine = `${prefixStr}${chars.bottomLeft}${chars.horizontal.repeat(effectiveInnerWidth)}${chars.bottomRight}`;
+    return `${topLine}\n${middleLine}\n${bottomLine}`;
+}
+/**
+ * Checks if the given text is a box-style banner and extracts the original text
+ * @param text The text that might be a box banner
+ * @param prefix The comment prefix to check for
+ * @returns The original text if it's a box banner, or null if not
+ */
+function extractTextFromBoxBanner(text, prefix) {
+    const lines = text.split(/\r?\n/);
+    if (lines.length !== 3) {
+        return null;
+    }
+    const prefixStr = `${prefix} `;
+    // Check if all lines start with the prefix
+    if (!lines.every(line => line.startsWith(prefixStr))) {
+        return null;
+    }
+    // Get content after prefix for each line
+    const contents = lines.map(line => line.substring(prefixStr.length));
+    // Check for any known box style
+    for (const style of Object.values(BOX_STYLES)) {
+        // Check top line pattern
+        if (contents[0].startsWith(style.topLeft) && contents[0].endsWith(style.topRight)) {
+            // Check middle line pattern
+            if (contents[1].startsWith(style.vertical) && contents[1].endsWith(style.vertical)) {
+                // Check bottom line pattern
+                if (contents[2].startsWith(style.bottomLeft) && contents[2].endsWith(style.bottomRight)) {
+                    // Extract text from middle line
+                    const innerText = contents[1].substring(1, contents[1].length - 1).trim();
+                    return innerText;
+                }
+            }
+        }
+    }
+    return null;
+}
+/**
  * Extension activation function. Called the first time a command from the extension is run.
  * @param context The extension context provided by VS Code.
  */
@@ -241,6 +351,8 @@ function makeBanner() {
     const configuration = vscode.workspace.getConfiguration('bannerComment');
     const rawLineWidth = configuration.get('lineWidth', 80);
     const rawPaddingCharacter = configuration.get('paddingCharacter', '-');
+    const bannerStyle = configuration.get('style', 'simple');
+    const boxStyle = configuration.get('boxStyle', 'unicode');
     // Validate and normalize configuration
     const { lineWidth, paddingCharacter } = validateConfiguration(rawLineWidth, rawPaddingCharacter);
     // Determine comment prefix based on language
@@ -250,17 +362,31 @@ function makeBanner() {
     editor.edit((editBuilder) => {
         editor.selections.forEach((sel) => {
             const rawText = editor.document.getText(sel);
-            // Normalize text: replace newlines with spaces to ensure single-line banner
-            const normalizedText = rawText.replace(/[\r\n]+/g, ' ');
-            const trimmedText = normalizedText.trim();
+            const trimmedText = rawText.trim();
             if (trimmedText.length === 0) {
                 // Skip empty selections
                 return;
             }
-            // Extract original text if it's already a banner
-            const originalText = extractTextFromBanner(normalizedText, commentPrefix);
-            // Create new banner with original text
-            const banner = buildBanner(originalText, lineWidth, paddingCharacter, commentPrefix);
+            // Try to extract text from existing banner (box or simple)
+            let originalText;
+            // First, try to detect if it's a box banner
+            const boxText = extractTextFromBoxBanner(rawText, commentPrefix);
+            if (boxText !== null) {
+                originalText = boxText;
+            }
+            else {
+                // Normalize text and try simple banner extraction
+                const normalizedText = rawText.replace(/[\r\n]+/g, ' ');
+                originalText = extractTextFromBanner(normalizedText, commentPrefix);
+            }
+            // Create banner based on selected style
+            let banner;
+            if (bannerStyle === 'box') {
+                banner = buildBoxBanner(originalText, lineWidth, boxStyle, commentPrefix);
+            }
+            else {
+                banner = buildBanner(originalText, lineWidth, paddingCharacter, commentPrefix);
+            }
             editBuilder.replace(sel, banner);
         });
     }).then((success) => {

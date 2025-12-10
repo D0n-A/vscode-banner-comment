@@ -2,7 +2,7 @@
     "name": "banner-comment",
     "displayName": "Banner Comment",
     "description": "Creates a beautiful banner comment from the selected text.",
-    "version": "0.1.1",
+    "version": "0.2.0",
     "publisher": "D0n-A",
     "repository": {
         "type": "git",
@@ -51,6 +51,25 @@
                     "minLength": 1,
                     "maxLength": 1,
                     "description": "The single character used to pad the banner comment. Examples: -, =, *, #, ~"
+                },
+                "bannerComment.style": {
+                    "type": "string",
+                    "enum": ["simple", "box"],
+                    "default": "simple",
+                    "description": "The style of the banner comment. 'simple' creates a single-line banner, 'box' creates a framed box."
+                },
+                "bannerComment.boxStyle": {
+                    "type": "string",
+                    "enum": ["unicode", "ascii", "rounded", "heavy"],
+                    "default": "unicode",
+                    "enumDescriptions": [
+                        "Double-line Unicode box: ╔═══╗ ║ ╚═══╝",
+                        "Simple ASCII box: +---+ | +---+",
+                        "Rounded corners: ╭───╮ │ ╰───╯",
+                        "Heavy/bold lines: ┏━━━┓ ┃ ┗━━━┛"
+                    ],
+                    "default": "unicode",
+                    "description": "The style of box border when using 'box' style."
                 }
             }
         }

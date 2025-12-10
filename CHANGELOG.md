@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.0] - 2025-12-11
+
+### Added
+
+- **Box-style banners** — new multi-line framed banner format with 4 border styles:
+  - `unicode` — double-line Unicode box (`╔═══╗ ║ ╚═══╝`)
+  - `ascii` — simple ASCII box (`+---+ | +---+`)
+  - `rounded` — rounded corners (`╭───╮ │ ╰───╯`)
+  - `heavy` — bold/heavy lines (`┏━━━┓ ┃ ┗━━━┛`)
+- New configuration option `bannerComment.style` to switch between `simple` and `box` styles.
+- New configuration option `bannerComment.boxStyle` to choose the box border style.
+- Toggle support for box banners — selecting an existing box banner and running the command will extract the text and recreate it.
+
 ## [0.1.1] - 2025-06-21
 
 ### Added
