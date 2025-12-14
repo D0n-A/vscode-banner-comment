@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.1] - 2025-12-14
+
+### Added
+
+- New setting `bannerComment.target` to choose what to convert: `selection`, `line`, or `auto`.
+- New setting `bannerComment.mirrorCommentPrefix` to append the comment prefix at the end for symmetric banners (e.g. `// --- TEXT --- //`).
+
+### Changed
+
+- Keybinding is now available without a selection (`when: editorTextFocus`) to support `line` / `auto` targets.
+- Box banners now use the document EOL (`LF`/`CRLF`) when inserted, avoiding mixed line endings.
+- Box banner text extraction now tolerates indentation before the comment prefix (useful when creating banners from indented lines).
+
 ## [0.2.0] - 2025-12-11
 
 ### Added

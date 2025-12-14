@@ -7,10 +7,13 @@ node_modules/
 src/
 
 # Exclude configuration and development files that are not needed in the packaged extension
+.gitignore
 .gitattributes
 .editorconfig
 .eslintrc.json # or other possible eslintrc filenames
 .eslintignore
+eslint.config.cjs
+package-lock.json
 tsconfig.json
 # webpack.config.js # If webpack were used
 

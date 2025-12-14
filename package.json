@@ -1,8 +1,8 @@
 {
     "name": "banner-comment",
     "displayName": "Banner Comment",
-    "description": "Creates a beautiful banner comment from the selected text.",
-    "version": "0.2.0",
+    "description": "Creates a beautiful banner comment from the selected text or the current line.",
+    "version": "0.2.1",
     "publisher": "D0n-A",
     "repository": {
         "type": "git",
@@ -32,12 +32,18 @@
                 "command": "bannerComment.make",
                 "key": "ctrl+alt+b",
                 "mac": "cmd+alt+b",
-                "when": "editorTextFocus && editorHasSelection"
+                "when": "editorTextFocus"
             }
         ],
         "configuration": {
             "title": "Banner Comment",
             "properties": {
+                "bannerComment.target": {
+                    "type": "string",
+                    "enum": ["selection", "line", "auto"],
+                    "default": "selection",
+                    "description": "Where to take text from. 'selection' uses the selected text, 'line' uses the entire current line, 'auto' uses selection if present, otherwise the current line."
+                },
                 "bannerComment.lineWidth": {
                     "type": "integer",
                     "default": 80,
@@ -58,6 +64,11 @@
                     "default": "simple",
                     "description": "The style of the banner comment. 'simple' creates a single-line banner, 'box' creates a framed box."
                 },
+                "bannerComment.mirrorCommentPrefix": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Append the comment prefix at the end to make banners symmetric (e.g. // --- TEXT --- //). Works for both 'simple' and 'box' styles."
+                },
                 "bannerComment.boxStyle": {
                     "type": "string",
                     "enum": ["unicode", "ascii", "rounded", "heavy"],
@@ -68,7 +79,6 @@
                         "Rounded corners: ╭───╮ │ ╰───╯",
                         "Heavy/bold lines: ┏━━━┓ ┃ ┗━━━┛"
                     ],
-                    "default": "unicode",
                     "description": "The style of box border when using 'box' style."
                 }
             }
@@ -79,7 +89,7 @@
         "compile": "tsc -p ./",
         "watch": "tsc -watch -p ./",
         "lint": "eslint src --ext ts",
-        "test": "npm run compile && node ./out/test/runTest.js",
+        "test": "npm run compile && npm run lint",
         "package": "npm run compile && vsce package",
         "build:vsix": "npm run package"
     },
@@ -95,7 +105,7 @@
         "eslint": "^9.0.0",
         "glob": "^10.3.10",
         "mocha": "^11.7.0",
-        "typescript": "^5.3.3",
+        "typescript": "^5.8.3",
         "typescript-eslint": "^8.34.1"
     },
     "keywords": [

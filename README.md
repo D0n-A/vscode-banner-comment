@@ -1,11 +1,11 @@
 # Banner Comment
 
-A Visual Studio Code extension that lets you quickly create neat banner comments from the selected text.
+A Visual Studio Code extension that lets you quickly create neat banner comments from the selected text or the current line.
 It is handy for visually separating code blocks, adding headings to configuration files, or simply leaving eye-catching comments.
 
 ## Features
 
-- Converts the selected text into a styled banner.
+- Converts the selected text (or current line) into a styled banner.
 - **Two banner styles:**
   - **Simple** — single-line banner: `// --- TEXT ---`
   - **Box** — framed multi-line banner with 4 border styles
@@ -17,12 +17,15 @@ It is handy for visually separating code blocks, adding headings to configuratio
   - `%` for LaTeX.
   - `REM` for Batch files.
 - **Handles multiline selections** (flattens them into a single line).
+- **Configurable conversion target**: selection / current line / auto.
+- **Optional mirrored suffix** for symmetric banners (e.g. `// --- TEXT --- //`).
 - User-defined keyboard shortcut via standard VS Code settings.
 - Customizable width and padding characters.
 
 ## How to Use
 
-1. **Select text** — highlight the word or phrase you want to turn into a banner.
+1. **Select text** — highlight the word or phrase you want to turn into a banner
+   (or place the cursor on a line when using `bannerComment.target: "line"` or `"auto"`).
 2. **Run the command**
     - **Command Palette:** press `Ctrl+Shift+P` (`Cmd+Shift+P` on macOS), start typing “Create Banner Comment” and choose the command.
     - **Keyboard shortcut:** by default press `Ctrl+Alt+B` (Windows / Linux) or `Cmd+Alt+B` (macOS).
@@ -75,6 +78,10 @@ ASCII:
 
 This extension provides the following settings that can be configured in your VS Code User or Workspace settings:
 
+- `bannerComment.target`: What to convert into a banner.
+  - Type: `string`
+  - Values: `"selection"`, `"line"`, `"auto"`
+  - Default: `"selection"`
 - `bannerComment.lineWidth`: The total width of the banner comment line.
   - Type: `integer`
   - Default: `80`
@@ -85,6 +92,9 @@ This extension provides the following settings that can be configured in your VS
   - Type: `string`
   - Values: `"simple"`, `"box"`
   - Default: `"simple"`
+- `bannerComment.mirrorCommentPrefix`: Append the comment prefix at the end for symmetric banners.
+  - Type: `boolean`
+  - Default: `false`
 - `bannerComment.boxStyle`: The style of box border (when using box style).
   - Type: `string`
   - Values: `"unicode"`, `"ascii"`, `"rounded"`, `"heavy"`
@@ -106,6 +116,15 @@ Example `settings.json` for box style:
     "bannerComment.style": "box",
     "bannerComment.boxStyle": "rounded",
     "bannerComment.lineWidth": 80
+}
+```
+
+Example `settings.json` for line/auto mode with a mirrored suffix:
+
+```json
+{
+    "bannerComment.target": "auto",
+    "bannerComment.mirrorCommentPrefix": true
 }
 ```
 

@@ -119,11 +119,23 @@ function extractTextFromBanner(text: string, prefix: string): string {
         return trimmed
     }
 
+    // Support optional mirrored suffix: "... <prefix>"
+    const suffixToken = ` ${prefix}`
+    let normalized = trimmed
+    if (normalized.endsWith(suffixToken)) {
+        normalized = normalized.substring(0, normalized.length - suffixToken.length).trimEnd()
+    }
+
     // Remove the prefix and any whitespace
-    const withoutPrefix = trimmed.substring(prefix.length).trim()
+    const withoutPrefix = normalized.substring(prefix.length).trim()
 
     // If it's empty after removing prefix, return empty
     if (withoutPrefix.length === 0) {
+        return ''
+    }
+
+    // If it's a pure padding line (e.g. "--------"), treat as empty text
+    if (/^([^a-zA-Z0-9А-Яа-я\s])\1*$/.test(withoutPrefix)) {
         return ''
     }
 
@@ -209,6 +221,37 @@ function validateConfiguration(lineWidth: number, paddingCharacter: string): {
     }
 }
 
+type BannerTarget = 'selection' | 'line' | 'auto'
+
+function normalizeBannerTarget(target: string | undefined): BannerTarget {
+    if (target === 'selection' || target === 'line' || target === 'auto') {
+        return target
+    }
+    return 'selection'
+}
+
+function getDocumentEol(document: vscode.TextDocument): string {
+    return document.eol === vscode.EndOfLine.LF ? '\n' : '\r\n'
+}
+
+function getLineIndentation(text: string): string {
+    const match = text.match(/^\s*/)
+    return match ? match[0] : ''
+}
+
+function indentMultilineText(text: string, indent: string, eol: string): string {
+    if (!indent) {
+        return text
+    }
+    return text.split(/\r?\n/).map(line => indent + line).join(eol)
+}
+
+interface BannerOperation {
+    range: vscode.Range
+    rawText: string
+    indent: string
+}
+
 /**
  * Builds a string of the form
  * <PREFIX> --------------- TITLE ---------------
@@ -216,29 +259,36 @@ function validateConfiguration(lineWidth: number, paddingCharacter: string): {
  * @param width The total width of the banner line
  * @param fill The character to use for padding
  * @param prefix The comment prefix to use
+ * @param mirrorCommentPrefix Whether to append a mirrored prefix at the end
  * @returns The formatted banner string
  */
-function buildBanner(text: string, width: number, fill: string, prefix: string): string {
+function buildBanner(
+    text: string,
+    width: number,
+    fill: string,
+    prefix: string,
+    mirrorCommentPrefix: boolean
+): string {
     const cleanText = text.replace(/[\r\n]+/g, ' ').trim()
+    const prefixStr = `${prefix} `
+    const suffixStr = mirrorCommentPrefix ? ` ${prefix}` : ''
 
     // Handle empty text - create a simple line
     if (cleanText.length === 0) {
-        const prefixStr = `${prefix} `
-        const bodyWidth = width - prefixStr.length
+        const bodyWidth = width - prefixStr.length - suffixStr.length
         const body = fill.repeat(Math.max(0, bodyWidth))
-        return `${prefixStr}${body}`
+        return `${prefixStr}${body}${suffixStr}`
     }
 
     const core = ` ${cleanText} ` // Add spaces around the text
-    const prefixStr = `${prefix} `
-    const targetBodyWidth = width - prefixStr.length
+    const targetBodyWidth = width - prefixStr.length - suffixStr.length
 
     // Check if text is too long for the specified width
     if (core.length >= targetBodyWidth) {
         // If text is too long, truncate it properly
-        const availableSpace = Math.max(1, targetBodyWidth)
+        const availableSpace = Math.max(0, targetBodyWidth)
         const truncatedCore = core.substring(0, availableSpace)
-        return `${prefixStr}${truncatedCore}`
+        return `${prefixStr}${truncatedCore}${suffixStr}`
     }
 
     // Calculate padding for perfect centering
@@ -247,7 +297,7 @@ function buildBanner(text: string, width: number, fill: string, prefix: string):
     const rightPadding = totalPadding - leftPadding
 
     const body = fill.repeat(leftPadding) + core + fill.repeat(rightPadding)
-    return `${prefixStr}${body}`
+    return `${prefixStr}${body}${suffixStr}`
 }
 
 /**
@@ -256,20 +306,30 @@ function buildBanner(text: string, width: number, fill: string, prefix: string):
  * @param width The total width of the banner line
  * @param boxStyle The style of box to use (unicode, ascii, rounded, heavy)
  * @param prefix The comment prefix to use
+ * @param mirrorCommentPrefix Whether to append a mirrored prefix at the end
+ * @param eol The line ending to use for multi-line output
  * @returns The formatted box banner string (multiple lines)
  */
-function buildBoxBanner(text: string, width: number, boxStyle: string, prefix: string): string {
+function buildBoxBanner(
+    text: string,
+    width: number,
+    boxStyle: string,
+    prefix: string,
+    mirrorCommentPrefix: boolean,
+    eol: string
+): string {
     const chars = BOX_STYLES[boxStyle] || BOX_STYLES.unicode
     const cleanText = text.replace(/[\r\n]+/g, ' ').trim()
 
     const prefixStr = `${prefix} `
-    const innerWidth = width - prefixStr.length - 2 // -2 for left and right border chars
+    const suffixStr = mirrorCommentPrefix ? ` ${prefix}` : ''
+    const innerWidth = width - prefixStr.length - suffixStr.length - 2 // -2 for left and right border chars
 
     // Ensure minimum width for the text
-    const effectiveInnerWidth = Math.max(innerWidth, 1)
+    const effectiveInnerWidth = Math.max(innerWidth, 0)
 
     // Build top line: // ╔════════════════════════════════════╗
-    const topLine = `${prefixStr}${chars.topLeft}${chars.horizontal.repeat(effectiveInnerWidth)}${chars.topRight}`
+    const topLine = `${prefixStr}${chars.topLeft}${chars.horizontal.repeat(effectiveInnerWidth)}${chars.topRight}${suffixStr}`
 
     // Build middle line with centered text: // ║         TEXT         ║
     let middleContent: string
@@ -285,12 +345,12 @@ function buildBoxBanner(text: string, width: number, boxStyle: string, prefix: s
         const rightPad = totalPadding - leftPad
         middleContent = ' '.repeat(leftPad) + cleanText + ' '.repeat(rightPad)
     }
-    const middleLine = `${prefixStr}${chars.vertical}${middleContent}${chars.vertical}`
+    const middleLine = `${prefixStr}${chars.vertical}${middleContent}${chars.vertical}${suffixStr}`
 
     // Build bottom line: // ╚════════════════════════════════════╝
-    const bottomLine = `${prefixStr}${chars.bottomLeft}${chars.horizontal.repeat(effectiveInnerWidth)}${chars.bottomRight}`
+    const bottomLine = `${prefixStr}${chars.bottomLeft}${chars.horizontal.repeat(effectiveInnerWidth)}${chars.bottomRight}${suffixStr}`
 
-    return `${topLine}\n${middleLine}\n${bottomLine}`
+    return [topLine, middleLine, bottomLine].join(eol)
 }
 
 /**
@@ -306,14 +366,24 @@ function extractTextFromBoxBanner(text: string, prefix: string): string | null {
     }
 
     const prefixStr = `${prefix} `
+    const suffixToken = ` ${prefix}`
+
+    // Allow indentation before prefix (line-mode preserves indentation)
+    const normalizedLines = lines.map(line => line.trimStart())
 
     // Check if all lines start with the prefix
-    if (!lines.every(line => line.startsWith(prefixStr))) {
+    if (!normalizedLines.every(line => line.startsWith(prefixStr))) {
         return null
     }
 
     // Get content after prefix for each line
-    const contents = lines.map(line => line.substring(prefixStr.length))
+    const contents = normalizedLines.map(line => {
+        let content = line.substring(prefixStr.length)
+        if (content.endsWith(suffixToken)) {
+            content = content.substring(0, content.length - suffixToken.length)
+        }
+        return content
+    })
 
     // Check for any known box style
     for (const style of Object.values(BOX_STYLES)) {
@@ -356,7 +426,7 @@ export function deactivate() {}
 
 /**
  * Main command function.
- * Gets the selected text from the active editor and replaces it with a banner.
+ * Creates a banner from the selected text or the current line (depending on settings).
  */
 function makeBanner() {
     const editor = vscode.window.activeTextEditor
@@ -365,64 +435,106 @@ function makeBanner() {
         return
     }
 
-    // Check if there are any valid selections
-    const hasValidSelection = editor.selections.some(sel => {
-        const text = editor.document.getText(sel)
-        return text.trim().length > 0
-    })
-
-    if (!hasValidSelection) {
-        vscode.window.showWarningMessage('Please select some text to create a banner.')
-        return
-    }
+    const document = editor.document
+    const eol = getDocumentEol(document)
 
     const configuration = vscode.workspace.getConfiguration('bannerComment')
+    const target = normalizeBannerTarget(configuration.get<string>('target', 'selection'))
     const rawLineWidth = configuration.get<number>('lineWidth', 80)
     const rawPaddingCharacter = configuration.get<string>('paddingCharacter', '-')
     const bannerStyle = configuration.get<string>('style', 'simple')
     const boxStyle = configuration.get<string>('boxStyle', 'unicode')
+    const mirrorCommentPrefix = configuration.get<boolean>('mirrorCommentPrefix', false)
 
     // Validate and normalize configuration
     const { lineWidth, paddingCharacter } = validateConfiguration(rawLineWidth, rawPaddingCharacter)
 
     // Determine comment prefix based on language
-    const languageId = editor.document.languageId
-    const commentPrefix = getCommentPrefix(languageId)
+    const commentPrefix = getCommentPrefix(document.languageId)
 
-    // Process all selections in a single edit operation for better undo support
-    editor.edit((editBuilder: vscode.TextEditorEdit) => {
-        editor.selections.forEach((sel: vscode.Selection) => {
-            const rawText = editor.document.getText(sel)
-            const trimmedText = rawText.trim()
+    const nonEmptySelections = editor.selections.filter(sel => document.getText(sel).trim().length > 0)
 
-            if (trimmedText.length === 0) {
-                // Skip empty selections
-                return
+    let operations: BannerOperation[] = []
+
+    if (target === 'selection') {
+        if (nonEmptySelections.length === 0) {
+            vscode.window.showWarningMessage('Please select some text to create a banner.')
+            return
+        }
+
+        operations = nonEmptySelections.map(sel => ({
+            range: sel,
+            rawText: document.getText(sel),
+            indent: ''
+        }))
+    } else if (target === 'auto' && nonEmptySelections.length > 0) {
+        operations = nonEmptySelections.map(sel => ({
+            range: sel,
+            rawText: document.getText(sel),
+            indent: ''
+        }))
+    } else {
+        const lineNumbers = new Set<number>()
+        editor.selections.forEach(sel => lineNumbers.add(sel.active.line))
+
+        operations = Array.from(lineNumbers).map(lineNumber => {
+            const line = document.lineAt(lineNumber)
+            return {
+                range: line.range,
+                rawText: line.text,
+                indent: getLineIndentation(line.text)
             }
+        })
+    }
 
+    // Sort descending to avoid range shifting issues when inserting multi-line banners
+    operations.sort((a, b) => {
+        if (a.range.start.line !== b.range.start.line) {
+            return b.range.start.line - a.range.start.line
+        }
+        return b.range.start.character - a.range.start.character
+    })
+
+    // Process all operations in a single edit operation for better undo support
+    editor.edit((editBuilder: vscode.TextEditorEdit) => {
+        for (const op of operations) {
             // Try to extract text from existing banner (box or simple)
             let originalText: string
 
             // First, try to detect if it's a box banner
-            const boxText = extractTextFromBoxBanner(rawText, commentPrefix)
+            const boxText = extractTextFromBoxBanner(op.rawText, commentPrefix)
             if (boxText !== null) {
                 originalText = boxText
             } else {
                 // Normalize text and try simple banner extraction
-                const normalizedText = rawText.replace(/[\r\n]+/g, ' ')
+                const normalizedText = op.rawText.replace(/[\r\n]+/g, ' ')
                 originalText = extractTextFromBanner(normalizedText, commentPrefix)
             }
 
             // Create banner based on selected style
             let banner: string
             if (bannerStyle === 'box') {
-                banner = buildBoxBanner(originalText, lineWidth, boxStyle, commentPrefix)
+                banner = buildBoxBanner(
+                    originalText,
+                    lineWidth,
+                    boxStyle,
+                    commentPrefix,
+                    mirrorCommentPrefix,
+                    eol
+                )
             } else {
-                banner = buildBanner(originalText, lineWidth, paddingCharacter, commentPrefix)
+                banner = buildBanner(
+                    originalText,
+                    lineWidth,
+                    paddingCharacter,
+                    commentPrefix,
+                    mirrorCommentPrefix
+                )
             }
 
-            editBuilder.replace(sel, banner)
-        })
+            banner = indentMultilineText(banner, op.indent, eol)
+            editBuilder.replace(op.range, banner)
+        }
     }).then((success) => {
         if (!success) {
             vscode.window.showErrorMessage('Failed to create banner comment.')
