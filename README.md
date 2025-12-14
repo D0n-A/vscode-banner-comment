@@ -167,6 +167,30 @@ Alternatively, you can directly edit your `keybindings.json` file. You can open 
 }
 ```
 
+## Build VSIX from source
+
+Prerequisites: **Node.js 18+** and **git**.
+
+After running the command below, the packaged file `banner-comment-*.vsix` will be created in the project folder.
+
+**macOS / Linux (bash/zsh):**
+
+```bash
+git clone --depth 1 https://github.com/D0n-A/vscode-banner-comment.git && cd vscode-banner-comment && npm ci && npm run build:vsix
+```
+
+**Windows (cmd.exe):**
+
+```bat
+git clone --depth 1 https://github.com/D0n-A/vscode-banner-comment.git && cd vscode-banner-comment && npm ci && npm run build:vsix
+```
+
+**Windows (PowerShell):**
+
+```powershell
+git clone --depth 1 https://github.com/D0n-A/vscode-banner-comment.git; Set-Location vscode-banner-comment; npm ci; npm run build:vsix
+```
+
 ## Feedback and Suggestions
 
 Found a bug or have an idea? Feel free to open an issue or reach out.
