@@ -1,4 +1,6 @@
 import * as vscode from 'vscode'
+import * as fs from 'fs'
+import * as path from 'path'
 
 /**
  * Box drawing characters for different styles
@@ -48,6 +50,144 @@ const BOX_STYLES: Record<string, BoxChars> = {
         horizontal: '━',
         vertical: '┃'
     }
+}
+
+const languageConfigLineCommentCache = new Map<string, string | null>()
+
+function stripUtf8Bom(text: string): string {
+    return text.charCodeAt(0) === 0xfeff ? text.slice(1) : text
+}
+
+function stripJsonComments(text: string): string {
+    let result = ''
+
+    let inString = false
+    let stringChar: '"' | "'" | '' = ''
+    let inLineComment = false
+    let inBlockComment = false
+
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i]
+        const next = i + 1 < text.length ? text[i + 1] : ''
+
+        if (inLineComment) {
+            if (char === '\n') {
+                inLineComment = false
+                result += char
+            }
+            continue
+        }
+
+        if (inBlockComment) {
+            if (char === '*' && next === '/') {
+                inBlockComment = false
+                i++
+                continue
+            }
+            if (char === '\n') {
+                result += '\n'
+            }
+            continue
+        }
+
+        if (inString) {
+            result += char
+            if (char === '\\') {
+                if (i + 1 < text.length) {
+                    result += text[i + 1]
+                    i++
+                }
+                continue
+            }
+            if (char === stringChar) {
+                inString = false
+                stringChar = ''
+            }
+            continue
+        }
+
+        if (char === '"' || char === "'") {
+            inString = true
+            stringChar = char
+            result += char
+            continue
+        }
+
+        if (char === '/' && next === '/') {
+            inLineComment = true
+            i++
+            continue
+        }
+
+        if (char === '/' && next === '*') {
+            inBlockComment = true
+            i++
+            continue
+        }
+
+        result += char
+    }
+
+    return result
+}
+
+function getLineCommentPrefixFromLanguageConfiguration(languageId: string): string | null {
+    const cached = languageConfigLineCommentCache.get(languageId)
+    if (cached !== undefined) {
+        return cached
+    }
+
+    for (const extension of vscode.extensions.all) {
+        const packageJson: unknown = extension.packageJSON as unknown
+        if (!packageJson || typeof packageJson !== 'object') {
+            continue
+        }
+
+        const contributes = (packageJson as { contributes?: unknown }).contributes
+        if (!contributes || typeof contributes !== 'object') {
+            continue
+        }
+
+        const languages = (contributes as { languages?: unknown }).languages
+        if (!Array.isArray(languages)) {
+            continue
+        }
+
+        for (const langEntry of languages) {
+            if (!langEntry || typeof langEntry !== 'object') {
+                continue
+            }
+
+            const id = (langEntry as { id?: unknown }).id
+            if (id !== languageId) {
+                continue
+            }
+
+            const configuration = (langEntry as { configuration?: unknown }).configuration
+            if (typeof configuration !== 'string' || configuration.length === 0) {
+                continue
+            }
+
+            const configPath = path.join(extension.extensionPath, configuration)
+            try {
+                const raw = stripUtf8Bom(fs.readFileSync(configPath, 'utf8'))
+                const parsed = JSON.parse(stripJsonComments(raw))
+                const lineComment = parsed?.comments?.lineComment
+                if (typeof lineComment === 'string') {
+                    const normalized = lineComment.trim()
+                    if (normalized.length > 0) {
+                        languageConfigLineCommentCache.set(languageId, normalized)
+                        return normalized
+                    }
+                }
+            } catch {
+                // ignore and keep searching other providers for the same languageId
+            }
+        }
+    }
+
+    languageConfigLineCommentCache.set(languageId, null)
+    return null
 }
 
 /**
@@ -115,7 +255,7 @@ function extractTextFromBanner(text: string, prefix: string): string {
     const trimmed = text.trim()
 
     // Check if it starts with the prefix
-    if (!trimmed.startsWith(prefix)) {
+    if (!startsWithCommentPrefixToken(trimmed, prefix)) {
         return trimmed
     }
 
@@ -173,6 +313,30 @@ function extractTextFromBanner(text: string, prefix: string): string {
 
     // If not a banner pattern, return the text without prefix
     return withoutPrefix
+}
+
+function startsWithCommentPrefixToken(text: string, prefix: string): boolean {
+    if (!text.startsWith(prefix)) {
+        return false
+    }
+
+    if (text.length === prefix.length) {
+        return true
+    }
+
+    const nextChar = text.charAt(prefix.length)
+    if (/\s/.test(nextChar)) {
+        return true
+    }
+
+    // For word-like prefixes (e.g. "REM") require a boundary to avoid matching "REMOVED".
+    const lastPrefixChar = prefix.charAt(prefix.length - 1)
+    if (/[a-zA-Z0-9]/.test(lastPrefixChar)) {
+        return false
+    }
+
+    // For symbol prefixes like //, #, -- allow no-space variants like //TODO or #TODO.
+    return true
 }
 
 /**
@@ -246,10 +410,24 @@ function indentMultilineText(text: string, indent: string, eol: string): string 
     return text.split(/\r?\n/).map(line => indent + line).join(eol)
 }
 
+function indentMultilineTextAfterFirstLine(text: string, indent: string, eol: string): string {
+    if (!indent) {
+        return text
+    }
+
+    const lines = text.split(/\r?\n/)
+    if (lines.length <= 1) {
+        return text
+    }
+
+    return [lines[0], ...lines.slice(1).map(line => indent + line)].join(eol)
+}
+
 interface BannerOperation {
     range: vscode.Range
     rawText: string
     indent: string
+    indentMode: 'all' | 'afterFirst'
 }
 
 /**
@@ -360,7 +538,8 @@ function buildBoxBanner(
  * @returns The original text if it's a box banner, or null if not
  */
 function extractTextFromBoxBanner(text: string, prefix: string): string | null {
-    const lines = text.split(/\r?\n/)
+    const normalizedText = text.replace(/(?:\r?\n)+$/, '')
+    const lines = normalizedText.split(/\r?\n/)
     if (lines.length !== 3) {
         return null
     }
@@ -404,6 +583,21 @@ function extractTextFromBoxBanner(text: string, prefix: string): string | null {
     return null
 }
 
+function normalizeRangeToAvoidTrailingNewline(range: vscode.Range, document: vscode.TextDocument): vscode.Range {
+    // If a selection ends at column 0 of a later line, it likely includes the newline(s)
+    // after the previous line. Replacing such a range with a non-newline-terminated string
+    // can accidentally glue the next line onto the last banner line.
+    if (range.end.character === 0 && range.end.line > range.start.line) {
+        const previousLine = document.lineAt(range.end.line - 1)
+        return new vscode.Range(range.start, previousLine.range.end)
+    }
+    return range
+}
+
+function isWhitespaceOnly(text: string): boolean {
+    return /^\s*$/.test(text)
+}
+
 /**
  * Extension activation function. Called the first time a command from the extension is run.
  * @param context The extension context provided by VS Code.
@@ -440,6 +634,8 @@ function makeBanner() {
 
     const configuration = vscode.workspace.getConfiguration('bannerComment')
     const target = normalizeBannerTarget(configuration.get<string>('target', 'selection'))
+    const commentPrefixOverrideRaw = configuration.get<string>('commentPrefix', '')
+    const preferLineCommentFromLanguageConfig = configuration.get<boolean>('preferLineCommentFromLanguageConfig', true)
     const rawLineWidth = configuration.get<number>('lineWidth', 80)
     const rawPaddingCharacter = configuration.get<string>('paddingCharacter', '-')
     const bannerStyle = configuration.get<string>('style', 'simple')
@@ -450,9 +646,20 @@ function makeBanner() {
     const { lineWidth, paddingCharacter } = validateConfiguration(rawLineWidth, rawPaddingCharacter)
 
     // Determine comment prefix based on language
-    const commentPrefix = getCommentPrefix(document.languageId)
+    const commentPrefixOverride = (commentPrefixOverrideRaw ?? '').trim()
 
-    const nonEmptySelections = editor.selections.filter(sel => document.getText(sel).trim().length > 0)
+    let commentPrefix: string
+    if (commentPrefixOverride.length > 0) {
+        commentPrefix = commentPrefixOverride
+    } else if (preferLineCommentFromLanguageConfig) {
+        commentPrefix = getLineCommentPrefixFromLanguageConfiguration(document.languageId) ?? getCommentPrefix(document.languageId)
+    } else {
+        commentPrefix = getCommentPrefix(document.languageId)
+    }
+
+    const nonEmptySelections = editor.selections
+        .map(sel => normalizeRangeToAvoidTrailingNewline(sel, document))
+        .filter(range => document.getText(range).trim().length > 0)
 
     let operations: BannerOperation[] = []
 
@@ -462,17 +669,65 @@ function makeBanner() {
             return
         }
 
-        operations = nonEmptySelections.map(sel => ({
-            range: sel,
-            rawText: document.getText(sel),
-            indent: ''
-        }))
+        if (bannerStyle === 'box') {
+            const unsafe = nonEmptySelections.find(range => {
+                const startLine = document.lineAt(range.start.line).text
+                const endLine = document.lineAt(range.end.line).text
+                const before = startLine.substring(0, range.start.character)
+                const after = endLine.substring(range.end.character)
+                return !isWhitespaceOnly(before) || !isWhitespaceOnly(after)
+            })
+
+            if (unsafe) {
+                vscode.window.showWarningMessage(
+                    'Box banners can only replace selections that occupy whole line content (besides indentation). Use bannerComment.target = "line" / "auto" or select only the line text.'
+                )
+                return
+            }
+        }
+
+        operations = nonEmptySelections.map(range => {
+            const indent = bannerStyle === 'box'
+                ? document.lineAt(range.start.line).text.substring(0, range.start.character)
+                : ''
+
+            return {
+                range,
+                rawText: document.getText(range),
+                indent,
+                indentMode: bannerStyle === 'box' ? 'afterFirst' : 'all'
+            }
+        })
     } else if (target === 'auto' && nonEmptySelections.length > 0) {
-        operations = nonEmptySelections.map(sel => ({
-            range: sel,
-            rawText: document.getText(sel),
-            indent: ''
-        }))
+        if (bannerStyle === 'box') {
+            const unsafe = nonEmptySelections.find(range => {
+                const startLine = document.lineAt(range.start.line).text
+                const endLine = document.lineAt(range.end.line).text
+                const before = startLine.substring(0, range.start.character)
+                const after = endLine.substring(range.end.character)
+                return !isWhitespaceOnly(before) || !isWhitespaceOnly(after)
+            })
+
+            if (unsafe) {
+                vscode.window.showWarningMessage(
+                    'Box banners can only replace selections that occupy whole line content (besides indentation). Use bannerComment.target = "line" / "auto" or select only the line text.'
+                )
+                return
+            }
+        }
+
+        operations = nonEmptySelections.map(range => {
+            const indent = bannerStyle === 'box'
+                ? document.lineAt(range.start.line).text.substring(0, range.start.character)
+                : ''
+
+            return {
+                range,
+                rawText: document.getText(range),
+                indent,
+                indentMode: bannerStyle === 'box' ? 'afterFirst' : 'all'
+            }
+        })
     } else {
         const lineNumbers = new Set<number>()
         editor.selections.forEach(sel => lineNumbers.add(sel.active.line))
@@ -482,7 +737,8 @@ function makeBanner() {
             return {
                 range: line.range,
                 rawText: line.text,
-                indent: getLineIndentation(line.text)
+                indent: getLineIndentation(line.text),
+                indentMode: 'all'
             }
         })
     }
@@ -532,7 +788,9 @@ function makeBanner() {
                 )
             }
 
-            banner = indentMultilineText(banner, op.indent, eol)
+            banner = op.indentMode === 'afterFirst'
+                ? indentMultilineTextAfterFirstLine(banner, op.indent, eol)
+                : indentMultilineText(banner, op.indent, eol)
             editBuilder.replace(op.range, banner)
         }
     }).then((success) => {

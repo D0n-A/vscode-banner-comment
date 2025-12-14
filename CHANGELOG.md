@@ -1,5 +1,24 @@
 # Changelog
 
+## [Unreleased]
+
+## [0.2.2] - 2025-12-14
+
+### Added
+
+- New setting `bannerComment.commentPrefix` to override the auto-detected comment prefix.
+- New setting `bannerComment.preferLineCommentFromLanguageConfig` to prefer `lineComment` from the language configuration when available.
+
+### Fixed
+
+- Avoid accidentally gluing the next line when converting a selection that ends at the beginning of the next line.
+- Preserve indentation for multi-line box banners created from indented selections.
+- More robust banner detection for word-like prefixes (e.g. `REM`).
+
+### Changed
+
+- Box banners in selection mode now require the selection to occupy the full line content (besides indentation) to avoid inserting multi-line banners in the middle of code.
+
 ## [0.2.1] - 2025-12-14
 
 ### Added

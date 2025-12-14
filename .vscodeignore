@@ -10,7 +10,8 @@ src/
 .gitignore
 .gitattributes
 .editorconfig
-.eslintrc.json # or other possible eslintrc filenames
+# Legacy eslint config (if present)
+.eslintrc.json
 .eslintignore
 eslint.config.cjs
 package-lock.json

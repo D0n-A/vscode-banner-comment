@@ -2,7 +2,7 @@
     "name": "banner-comment",
     "displayName": "Banner Comment",
     "description": "Creates a beautiful banner comment from the selected text or the current line.",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "publisher": "D0n-A",
     "repository": {
         "type": "git",
@@ -43,6 +43,16 @@
                     "enum": ["selection", "line", "auto"],
                     "default": "selection",
                     "description": "Where to take text from. 'selection' uses the selected text, 'line' uses the entire current line, 'auto' uses selection if present, otherwise the current line."
+                },
+                "bannerComment.commentPrefix": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Override the auto-detected comment prefix. Leave empty to auto-detect. Examples: //, #, --, ;;, %, REM (no trailing space needed)."
+                },
+                "bannerComment.preferLineCommentFromLanguageConfig": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Prefer the line comment token from the language configuration when available. If not available, falls back to the internal mapping."
                 },
                 "bannerComment.lineWidth": {
                     "type": "integer",

@@ -9,6 +9,7 @@ It is handy for visually separating code blocks, adding headings to configuratio
 - **Two banner styles:**
   - **Simple** — single-line banner: `// --- TEXT ---`
   - **Box** — framed multi-line banner with 4 border styles
+- **Note about Box style:** it produces a 3-line banner. For best results, use `bannerComment.target: "line"` / `"auto"` or select text that is the only content on its line(s) (besides indentation). This avoids inserting multi-line banners in the middle of code.
 - **Auto-detects language comment style:**
   - `//` for JavaScript, TypeScript, Java, C#, Go, Rust, etc.
   - `#` for Python, Ruby, Shell, YAML, Dockerfile, etc.
@@ -82,6 +83,13 @@ This extension provides the following settings that can be configured in your VS
   - Type: `string`
   - Values: `"selection"`, `"line"`, `"auto"`
   - Default: `"selection"`
+- `bannerComment.commentPrefix`: Override the auto-detected comment prefix (leave empty to auto-detect).
+  - Type: `string`
+  - Default: `""`
+  - Examples: `"//"`, `"#"`, `"--"`, "`;;`", `"%"`, `"REM"`
+- `bannerComment.preferLineCommentFromLanguageConfig`: Prefer the language configuration line comment token when available (falls back to the internal mapping).
+  - Type: `boolean`
+  - Default: `true`
 - `bannerComment.lineWidth`: The total width of the banner comment line.
   - Type: `integer`
   - Default: `80`
@@ -99,6 +107,12 @@ This extension provides the following settings that can be configured in your VS
   - Type: `string`
   - Values: `"unicode"`, `"ascii"`, `"rounded"`, `"heavy"`
   - Default: `"unicode"`
+
+**Comment prefix resolution order:**
+
+1. `bannerComment.commentPrefix` (if set)
+2. Language configuration `comments.lineComment` (if enabled via `bannerComment.preferLineCommentFromLanguageConfig`)
+3. Internal fallback mapping
 
 Example `settings.json` for simple style:
 
